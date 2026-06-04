@@ -1,7 +1,9 @@
 import requests
 import plotly.graph_objects as go
-from dash import html, dcc
+from dashboard.reporte_pdf import generar_pdf
+from dash import html, dcc, Input, Output, callback
 import dash_bootstrap_components as dbc
+
 
 ZABBIX_URL = "http://loop21.miteleferico.bo:8080/api_jsonrpc.php"
 API_TOKEN = "e5a3d40624a3d73ed3239f14a49644edbecaae39310ca8f3d60ae18d7fc9ce2e"
@@ -80,6 +82,7 @@ def contar_hosts(groupid):
 
 def layout():
 
+    figuras_reporte = []
     graficas = []
 
     total_up = 0
@@ -122,6 +125,9 @@ def layout():
             title=f"Línea {linea}",
             height=300
         )
+
+        figuras_reporte.append(fig)
+
 
         graficas.append(
 
@@ -166,13 +172,18 @@ def layout():
         labels=["Operativas", "No operativas"],
         values=[total_up, total_down],
         hole=0.55,
-        marker=dict(colors=["#2ecc71", "#e74c3c"])
+        marker=dict(colors=["#2ecc71", "#e74c3c"]),
     ))
 
+   
     fig_general.update_layout(
         title="ESTADO GENERAL DE CAMARAS DE TORRES",
         height=400
     )
+
+    figuras_reporte.append(fig_general)
+
+
 
     # ================= GRAFICO DE BARRAS =================
 
@@ -207,10 +218,22 @@ def layout():
         legend_title="Estado"
     )
 
+    figuras_reporte.append(fig_barras)
     # ================= LAYOUT =================
+    print("Cantidad de gráficos:", len(figuras_reporte))
+
+    global GRAFICOS_PDF
+    GRAFICOS_PDF = figuras_reporte
 
     return html.Div([
+        dbc.Button(
+            "📄 Generar PDF",
+            id="btn-pdf",
+            color="danger",
+            className="mb-3"
+        ),
 
+        dcc.Download(id="download-pdf"),
         html.H1(
             "CAMARAS TORRES MI TELEFERICO",
             style={
@@ -293,8 +316,25 @@ def layout():
         dbc.Row(graficas)
 
     ],
+
     style={
         "background-color": "#f4f6f9",
         "padding": "10px",
         "minHeight": "100vh"
     })
+
+@callback(
+    Output("download-pdf", "data"),
+    Input("btn-pdf", "n_clicks"),
+    prevent_initial_call=True
+)
+def descargar_pdf(n_clicks):
+
+    print("BOTON PDF PRESIONADO")
+    print("CANTIDAD DE GRAFICOS:", len(GRAFICOS_PDF))
+
+    pdf = generar_pdf(GRAFICOS_PDF)
+
+    return dcc.send_file(pdf)
+
+    

@@ -1,11 +1,12 @@
 import dash
 import dash_bootstrap_components as dbc
 from dash import html, dcc, Input, Output
+from dash import clientside_callback
 
 # IMPORTAR LOS LAYOUTS
 from dashboard.torres import layout as torres_layout
 from dashboard.cabinas import layout as cabinas_layout
-#from dashboard.estaciones import layout as estaciones_layout
+from dashboard.estaciones import layout as estaciones_layout
 from dashboard.camara_torres import layout as camaras_layout
 
 # =========================
@@ -29,7 +30,7 @@ sidebar = html.Div(
     [
         html.Div(
             [
-                html.H2("Dashboard", className="display-6"),
+                html.H2("Mi Teleférico", className="display-6"),
             ],
             className="sidebar-header",
         ),
@@ -70,7 +71,7 @@ sidebar = html.Div(
                         html.I(className="fas fa-video me-2"),
                         html.Span("Cámaras"),
                     ],
-                    href="/camaras",
+                    href="/camara_torres",
                     active="exact",
                 ),
             ],
@@ -98,7 +99,8 @@ app.layout = html.Div(
     [
         dcc.Location(id="url"),
         sidebar,
-        content
+        content,
+        html.Div(id="print-output", style={"display": "none"})
     ]
 )
 
@@ -117,14 +119,26 @@ def render_page_content(pathname):
     elif pathname == "/cabinas":
         return cabinas_layout()
 
-    #elif pathname == "/estaciones":
-    #    return estaciones_layout
+    elif pathname == "/estaciones":
+        return estaciones_layout()
 
-    elif pathname == "/camaras":
+    elif pathname == "/camara_torres":
         return camaras_layout()
 
     else:
         return torres_layout
+clientside_callback(
+    """
+    function(n_clicks){
+        if(n_clicks){
+            window.print();
+        }
+        return "";
+    }
+    """,
+    Output("print-output", "children"),
+    Input("print-btn", "n_clicks")
+)
 
 
 # =========================
